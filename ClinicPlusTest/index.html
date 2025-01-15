@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Форма заявки</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .error { color: red; }
+        .success { color: green; }
+        form { max-width: 400px; margin: auto; }
+    </style>
+</head>
+<body>
+    <h2>Форма заявки</h2>
+    <form id="requestForm">
+        <div>
+            <label for="name">Имя:</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+        <div>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <div>
+            <label for="phone">Телефон:</label>
+            <input type="text" id="phone" name="phone" placeholder="+7 (___) ___-__-__" required>
+        </div>
+        <button type="submit">Отправить</button>
+    </form>
+    <p id="message" class=""></p>
+
+    <script>
+        $(document).ready(function () {
+            $('#phone').on('focus', function () {
+                if (!$(this).val()) $(this).val('+7 (');
+            }).on('input', function () {
+                let cursorPos = this.selectionStart;
+                this.value = this.value.replace(/[^0-9+() -]/g, '').replace(/^([^+7]|.{19,})/g, '+7 (');
+                this.selectionStart = this.selectionEnd = cursorPos;
+            });
+
+            function validateForm() {
+                let name = $('#name').val().trim();
+                let email = $('#email').val().trim();
+                let phone = $('#phone').val().trim();
+                if (!name || !email.includes('@') || !phone.match(/^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/)) {
+                    $('#message').text('Ошибка: проверьте правильность заполнения полей').addClass('error').removeClass('success');
+                    return false;
+                }
+                return true;
+            }
+
+            $('#requestForm').on('submit', function (e) {
+                e.preventDefault();
+                if (!validateForm()) return;
+
+                $.ajax({
+                    url: 'process_form.php',
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    success: function (response) {
+                        let result = JSON.parse(response);
+                        if (result.success) {
+                            $('#requestForm').hide();
+                            $('#message').text('Заявка успешно отправлена!').addClass('success').removeClass('error');
+                        } else {
+                            $('#message').text(result.error).addClass('error').removeClass('success');
+                        }
+                    },
+                    error: function () {
+                        $('#message').text('Произошла ошибка на сервере').addClass('error').removeClass('success');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
